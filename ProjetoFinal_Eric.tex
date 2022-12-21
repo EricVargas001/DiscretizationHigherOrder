@@ -1,0 +1,273 @@
+\documentclass[]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{url}
+\usepackage[brazil]{babel}
+\usepackage[fixlanguage]{babelbib}
+\usepackage{enumitem}
+\usepackage{pgf,tikz}
+\usepackage{calc,pgffor,xkeyval}
+\usepackage{pgfplots}
+\usepackage{dsfont}
+\usepackage[bookmarks=true, hidelinks]{hyperref}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage[toc,page]{appendix}
+\usepackage{txfonts}
+\usepackage{lmodern}
+%\usepackage{minted}
+
+
+\pgfplotsset{compat=1.18}
+
+\newcounter{question}[section]
+\newenvironment{question}[1][]{\refstepcounter{question}\par\medskip
+   \noindent \textbf{Exercício~\thequestion. #1} \rmfamily}{\medskip}
+
+
+\newcounter{sol}[section]
+\newenvironment{sol}[1][]{\refstepcounter{sol}\par\medskip
+   \noindent \textbf{Solução~\thesol. #1}  \rmfamily}{\medskip}
+
+\newcounter{theorem}[section]
+\newenvironment{theorem}[1][]{\refstepcounter{theorem}\par\medskip
+   \noindent \textbf{Teorema~\thetheorem. #1} \rmfamily}{\medskip}
+
+\newcounter{reminder}[section]
+\newenvironment{reminder}[1][]{\refstepcounter{reminder}\par\medskip
+   \noindent \textbf{Recordação~\thereminder. #1} \rmfamily}{\medskip}
+
+
+
+\title{\textbf{Resolução Numérica de EDP\\Projeto Elíptico 2}}
+\author{ Eric Vargas\\N usp 2370310}
+\date{29 de Novembro de 2022.}
+
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+\section{Parte teórica}
+Seja $\Omega = (0,1)^2$ e $\Gamma = \partial \Omega$. Implementar e estudar a convergência para uma discretização de
+ordem superior, usando o estêncil compacto de 9 pontos, para a equação de Poisson seguinte
+\begin{align}
+    -\Delta u &= f \text{ em } \Omega\\
+    u &= g \text{ em } \Gamma.
+\end{align}
+
+A equação do estêncil compacto é
+\begin{align}
+    D_h u &= R_h f,\text{ com }
+    D_h =  \frac{h^-2} 6 \left[ 
+        \begin{array}{ccc}
+            -1& -4& -1\\
+            -4& 20& -4\\
+            -1& -4& -1
+        \end{array}\right], \text { e }
+        R_h = \frac 1 {12} \left[ \begin{array}{ccc}            
+            &1& \\
+            1 &8& 1 \\
+            &1&
+        \end{array}
+        \right]    
+\end{align}
+
+\subsection{Consistência}
+
+Para consistência, por Taylor temos
+\begin{align}
+    D_h u = -\Delta u  -\frac{h^2} {12} \Delta^2u - \frac{h^4} {360} \left[ 
+        \frac {\partial^4}{\partial x^4} 
+        +4\frac{\partial^4}{\partial x^2 \partial y^2}
+        +\frac{\partial^4}{\partial y^4}
+    \right]
+    + O(h^6)
+\end{align}
+De modo similar
+\begin{align*}
+    R_h f = f(x,y) + \frac{h^2} {12} \Delta f(x,y) + \frac{h^4} {144} \left[ 
+        \frac{ \partial^4f(x,y)}{\partial x^4} +
+        \frac{ \partial^4f(x,y)}{\partial y^4}
+    \right] + O(h^4),
+\end{align*}
+como $\Delta f = - \Delta^2 u$ temos que o estêncil $D_h u = R_h f \implies -\Delta u = f + O(h^4)$.
+
+\subsection{Estabilidade}
+
+O estêncil pode ser escrito de forma matricial da forma $L_h u_h = q_h$, onde $L_h$ possui a forma
+\begin{align*}
+    L_h = \frac{ h^{-2}   } 6 \left[
+        \begin{array}{ccccc}
+            T &B& 0 & \dots & 0 \\
+            B& T & B & \ddots & \vdots \\
+            0& \ddots &\ddots &\ddots& 0\\
+            \vdots & \ddots& B & T & B\\
+            0 & \dots & 0 & B& T
+        \end{array}
+    \right]
+\end{align*}
+com 
+\begin{align*}
+    T =  \left[
+        \begin{array}{ccccc}
+            20 &-4& 0 & \dots & 0 \\
+            -4& 20 & -4 & \ddots & \vdots \\
+            0& \ddots &\ddots &\ddots& 0\\
+            \vdots & \ddots& -4 & 20 & -4\\
+            0 & \dots & 0 & -4& 20
+        \end{array}
+    \right], \text{ e }
+    B = 
+    \left[
+        \begin{array}{ccccc}
+            -4 &-1& 0 & \dots & 0 \\
+            -1& -4 & -1 & \ddots & \vdots \\
+            0& \ddots &\ddots &\ddots& 0\\
+            \vdots & \ddots& -1 & -4 & -1\\
+            0 & \dots & 0 & -1& -4
+        \end{array}
+    \right]
+\end{align*}
+
+A maioria das linhas são diagonalmente dominantes (não estritamente)
+\begin{align*}
+    20 = 4 +4 + 2(1+4+1)
+\end{align*}
+mas elementos de cantos são estritos, por exemplo da primeira linha
+\begin{align*}
+    20 > 4 + 1 + 4 +1
+\end{align*}
+Somando isso, ao fato dos termos da diagonal principal serem positivos e todos os outros são negativos ou zero, temos que $L_h$ é irredutivelmente diagonalmente dominante, portanto possui inversa e o esquema é estável.
+
+
+\section{Resultados numéricos}
+
+Para este trabalho o sistema $L_h u_h = q_h$ foi resolvido com o método iterativo de Gauss-Seidel, conforme código a seguir.
+
+Abaixo podemos ver alguns exemplos gerados a partir do código em anexo.
+
+\subsection{Gráficos 3D em função de (u,h)}
+
+\begin{figure}[H]
+\begin{center}
+	\includegraphics[height=5cm]{figure_5.png} \quad
+	\includegraphics[height=5cm]{figure_10.png}
+\caption{Gráficos de (u,h) dados respectivamente n=5 e n=10} \label{graf1}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+	\includegraphics[height=5cm]{figure_15.png} \quad
+	\includegraphics[height=5cm]{figure_20.png}
+\caption{Gráficos de (u,h) dados respectivamente n=15 e n=20} \label{graf2}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+	\includegraphics[height=5cm]{figure_25.png} \quad
+	\includegraphics[height=5cm]{figure_29.png}
+\caption{Gráficos de (u,h) dados respectivamente n=25 e n=29} \label{graf3}
+\end{center}
+\end{figure}
+
+\break
+\subsection{Ajuste de condições de contorno}
+
+As condições de contorno provenientes do estêncil de 9  pontos  ($D_h$, $R_h$)  afetam $q_h$  como implementado no código ($q_h$=$rhs$):
+
+\begin{figure}[!h]
+\includegraphics[width=10cm]{Ajuste2.png}
+\centering 
+%\caption{Exemplo de Backtest no intervalo de 2001 e 2011} 
+\label{fig1}
+\end{figure}
+
+
+\subsection{Método de Gauss-Seidel}
+
+\begin{figure}[!h]
+\includegraphics[width=10cm]{Gauss2.png}
+\centering 
+\caption{Método de Gauss-Seidel} 
+\label{fig1}
+\end{figure}
+
+
+
+\break
+\section{Interpretação dos resultados e conclusões}
+
+Podemos ver que a ordem $O(h^4)$ produz resultados altamente precisos.
+
+A tabela abaixo mostra o número de iterações, $h^4$ e o respectivo erro numérico.
+\\
+
+\begin{tabular}{l  r r} 
+Número de iterações & $h^4$ &  Erro numérico\\
+3     & $0.012345679012345678$ & $0.00018383776555275233$\\
+4     & $0.00390625$ & $0.0004012592298812123$\\
+5     &   $0.0016$ & $0.00036560014727982093$\\
+6     &   $0.0007716049382716049$ & $0.00022958357134106322$\\
+7    &    $0.00041649312786339027$ & $0.00020312808770439617$\\
+8    &    $0.000244140625$ & $0.00015445719673712333$\\
+9    &    $0.00015241579027587258$ & $0.00012180854814847208$\\
+10  &     $0.0001$ & $9.301362926228407e-05$\\
+11  &      $6.830134553650706e-05$ & $8.23327785091088e-05$\\
+12     &  $4.8225308641975306e-05$ & $6.45562056189597e-05$\\
+13     &  $3.501277966457757e-05$ & $5.2918244617838894e-05$\\
+14     &  $2.6030820491461892e-05$ & $4.346707005353778e-05$\\
+15    &   $1.9753086419753087e-05$ & $3.693191255260686e-05$\\
+16 &      1.52587890625e-05      & 3.0024298637965074e-05\\
+17 &      1.1973036721303624e-05   & 2.6380407280424123e-05\\
+18 &      9.525986892242037e-06  &   2.236504020114438e-05\\
+19 &      7.673360394717659e-06  &   1.9481173944679853e-05\\
+20 &      6.25e-06           &       1.6581063520426653e-05\\
+21 &      5.141890467449262e-06   &  1.4481193649551471e-05\\
+22 &      4.2688340960316914e-06  &  1.2754921924873486e-05\\
+23 &      3.5734577849564572e-06  &  1.1452173654280529e-05\\
+24 &      3.0140817901234566e-06  &  1.0127474171284234e-05\\
+25 &      2.56e-06               &   8.94711930010672e-06\\
+26 &      2.1882987290360982e-06 &   8.117093590165325e-06\\
+27 &      1.8816764231589208e-06 &   7.226795554871046e-06\\
+28 &      1.6269262807163682e-06 &   6.489210438331838e-06\\
+29 &      1.413865210574015e-06   &  5.913293370074513e-06\\
+30 &      1.234567901234568e-06   &  5.349479041960592e-06\\
+31 &      1.0828124103295972e-06 &   4.903936691391664e-06\\
+32 &      9.5367431640625e-07      & 4.468544963387444e-06\\
+33 &      8.432264881050255e-07  &   4.120553980691e-06\\
+34 &      7.483147950814765e-07  &   3.7803551653503575e-06\\
+35 &      6.663890045814244e-07  &   3.471803569077281e-06\\
+36 &      5.953741807651273e-07  &   3.2070075954848676e-06\\
+37 &      5.335720890574503e-07  &   2.9651991009238543e-06\\
+38 &      4.795850246698537e-07  &   2.7334228436259878e-06\\
+39 &      4.322565390688589e-07  &   2.543742169791585e-06\\
+40 &      3.90625e-07            &   2.360722513472524e-06\\
+41 &      3.5388697062490424e-07  &  2.209552083520805e-06\\
+42 &      3.213681542155789e-07   &  2.049001314397003e-06\\
+43 &      2.925002069438964e-07  &   1.9158853099554563e-06\\
+44 &      2.668021310019807e-07  &   1.7991635932190775e-06\\
+45 &      2.438652644413961e-07   &  1.68142149625794e-06\\
+46 &      2.2334111155977858e-07 &   1.5782642441841688e-06\\
+47 &      2.0493142891922648e-07 &   1.4834015655829091e-06\\
+48 &      1.8838011188271604e-07 &   1.3924968387257763e-06\\
+49 &      1.7346652555743034e-07 &   1.3156390976654109e-06\\
+\end{tabular} 
+
+
+% \bibliographystyle{plain} 
+% \bibliography{refs}
+\end{document}

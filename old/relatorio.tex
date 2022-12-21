@@ -1,0 +1,170 @@
+\documentclass[]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{url}
+\usepackage[brazil]{babel}
+\usepackage[fixlanguage]{babelbib}
+\usepackage{enumitem}
+\usepackage{pgf,tikz}
+\usepackage{calc,pgffor,xkeyval}
+\usepackage{pgfplots}
+\usepackage{dsfont}
+\usepackage[bookmarks=true, hidelinks]{hyperref}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage[toc,page]{appendix}
+\usepackage{txfonts}
+\usepackage{lmodern}
+
+
+
+\pgfplotsset{compat=1.18}
+
+\newcounter{question}[section]
+\newenvironment{question}[1][]{\refstepcounter{question}\par\medskip
+   \noindent \textbf{Exercício~\thequestion. #1} \rmfamily}{\medskip}
+
+
+\newcounter{sol}[section]
+\newenvironment{sol}[1][]{\refstepcounter{sol}\par\medskip
+   \noindent \textbf{Solução~\thesol. #1}  \rmfamily}{\medskip}
+
+\newcounter{theorem}[section]
+\newenvironment{theorem}[1][]{\refstepcounter{theorem}\par\medskip
+   \noindent \textbf{Teorema~\thetheorem. #1} \rmfamily}{\medskip}
+
+\newcounter{reminder}[section]
+\newenvironment{reminder}[1][]{\refstepcounter{reminder}\par\medskip
+   \noindent \textbf{Recordação~\thereminder. #1} \rmfamily}{\medskip}
+
+
+
+\title{\textbf{MAP5724\\Resolução Numérica de Equações Diferenciais Parciais\\Projeto Elíptico 1}}
+\author{Prof.: Antoine Laurain\\Aluno Eric Vargas}
+\date{Segundo semestre de 2022.}
+
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+\section{Parte teórica}
+Seja $\Omega = (0,1)^2$ e $\Gamma = \partial \Omega$. Implementar e estudar a convergência para uma discretização de
+ordem superior, usando o estêncil compacto de 9 pontos, para a equação de Poisson seguinte
+\begin{align}
+    -\Delta u &= f \text{ em } \Omega\\
+    u &= g \text{ em } \Gamma.
+\end{align}
+
+A equação do estêncil compacto é:
+\begin{align}
+    D_h u &= R_h f,\text{ com }
+    D_h =  \frac{h^-2} 6 \left[ 
+        \begin{array}{ccc}
+            -1& -4& -1\\
+            -4& 20& -4\\
+            -1& -4& -1
+        \end{array}\right], \text { e }
+        R_h = \frac 1 {12} \left[ \begin{array}{ccc}            
+            &1& \\
+            1 &8& 1 \\
+            &1&
+        \end{array}
+        \right]    
+\end{align}
+
+\subsection{Consistência}
+
+Para consistência, por Taylor temos:
+\begin{align}
+    D_h u = -\Delta u  -\frac{h^2} {12} \Delta^2u - \frac{h^4} {360} \left[ 
+        \frac {\partial^4}{\partial x^4} 
+        +4\frac{\partial^4}{\partial x^2 \partial y^2}
+        +\frac{\partial^4}{\partial y^4}
+    \right]
+    + O(h^6)
+\end{align}
+De modo similar:
+\begin{align*}
+    R_h f = f(x,y) + \frac{h^2} {12} \Delta f(x,y) + \frac{h^4} {144} \left[ 
+        \frac{ \partial^4f(x,y)}{\partial x^4} +
+        \frac{ \partial^4f(x,y)}{\partial y^4}
+    \right] + O(h^4),
+\end{align*}
+como $\Delta f = - \Delta^2 u$ temos que o estêncil $D_h u = R_h f \implies -\Delta u = f + O(h^4)$.
+
+\subsection{Estabilidade}
+
+O estêncil pode ser escrito de forma matricial da forma $L_h u_h = q_h$, onde $L_h$ possui a forma:
+\begin{align*}
+    L_h = \frac{ h^{-2}   } 6 \left[
+        \begin{array}{ccccc}
+            T &B& 0 & \dots & 0 \\
+            B& T & B & \ddots & \vdots \\
+            0& \ddots &\ddots &\ddots& 0\\
+            \vdots & \ddots& B & T & B\\
+            0 & \dots & 0 & B& T
+        \end{array}
+    \right]
+\end{align*}
+com :
+\begin{align*}
+    T =  \left[
+        \begin{array}{ccccc}
+            20 &-4& 0 & \dots & 0 \\
+            -4& 20 & -4 & \ddots & \vdots \\
+            0& \ddots &\ddots &\ddots& 0\\
+            \vdots & \ddots& -4 & 20 & -4\\
+            0 & \dots & 0 & -4& 20
+        \end{array}
+    \right], \text{ e }
+    B = 
+    \left[
+        \begin{array}{ccccc}
+            -4 &-1& 0 & \dots & 0 \\
+            -1& -4 & -1 & \ddots & \vdots \\
+            0& \ddots &\ddots &\ddots& 0\\
+            \vdots & \ddots& -1 & -4 & -1\\
+            0 & \dots & 0 & -1& -4
+        \end{array}
+    \right]
+\end{align*}
+
+A maioria das linhas são diagonalmente dominantes (não estritamente):
+\begin{align*}
+    20 = 4 +4 + 2(1+4+1)
+\end{align*}
+mas elementos de cantos são estritos, por exemplo da primeira linha:
+\begin{align*}
+    20 > 4 + 1 + 4 +1
+\end{align*}
+Somando isso, ao fato dos termos da diagonal principal serem positivos e todos os outros são negativos ou zero, 
+temos que $L_h$ é irredutivelmente diagonalmente dominante, portanto possui inversa e o esquema é estável.
+
+
+\section{Resultados numéricos}
+
+Para este trabalho o sistema $L_h u_h = q_h$ foi resolvido com o método 
+iterativo de Gauss-Seidel. Abaixo podemos ver alguns exemplos gerados a partir do código em anexo.
+
+
+
+\section{Interpretação dos resultados e conclusões}
+
+Podemos ver que a ordem $O(h^4)$ produz resultados altamente precisos
+
+
+% \bibliographystyle{plain} 
+% \bibliography{refs}
+\end{document}

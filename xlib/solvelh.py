@@ -1,11 +1,12 @@
 import numpy as np
+from typing import Callable
 
 
-def ax(x: np.array) -> np.array:
+def ax(x: np.ndarray) -> np.ndarray:
     r = np.zeros_like(x)
 
     N = x.shape[0]
-    m = np.int(np.sqrt(N))
+    m = int(np.sqrt(N))
 
     # main diagonal
     r[:] += 20*x[:]
@@ -55,7 +56,7 @@ def conj_grad_err(n: int, k: int, e0: float = 1.0) -> float:
     return 2 * np.power((ka-1)/(ka+1), k) * e0
 
 
-def conj_grad(A, b, tol, k_max):
+def conj_grad(A: Callable, b: np.ndarray, tol: float, k_max: int):
     """
     Solves Ax = b
     """

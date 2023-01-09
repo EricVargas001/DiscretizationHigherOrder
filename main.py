@@ -6,10 +6,6 @@ from pdb import set_trace
 # NUSP 2370310
 ##########################
 
-#from mpl_toolkits.mplot3d import Axes3D
-#from matplotlib import cm
-#from matplotlib.ticker import LinearLocator, FormatStrFormatter
-#import matplotlib.pyplot as plt
 import os
 from xlib.elliptic import f_example  # run __init__.py
 import argparse
